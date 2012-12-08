@@ -10,78 +10,87 @@
     <link href='http://fonts.googleapis.com/css?family=Cabin:400,700' rel='stylesheet' type='text/css'>
     <script src="//cdnjs.cloudflare.com/ajax/libs/zepto/1.0rc1/zepto.min.js" type="text/javascript"></script>    
     <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/1.0.0-rc.2/lodash.min.js" type="text/javascript"></script>
+    <style type="text/css">
+      body {
+        background: #444;
+      }
+
+      #map {
+        border: 4px solid #eee;
+        width: 960px;
+        height: 500px;
+        box-shadow: 0px 2px 15px black;
+        margin: auto;
+      }
+    </style>
   </head>
   <body onload="altoGuiso()">
 
-      <section>
-        <div>
+    <div id="map"></div>
 
-          <link rel="stylesheet" href="css/leaflet.css" />
-          <!--[if IE]> <link rel="stylesheet" href="css/leaflet.ie.css" /> <![endif]-->
-          <link href="css/cartodb-leaflet.css" rel="stylesheet" type="text/css">
-          <script type="text/javascript" src="js/leaflet.js"></script>
-          <script type="text/javascript" src="js/wax.leaf.min.js"></script>
-          <script type="text/javascript" src="dist/cartodb-leaflet-min.js"></script>
-          <script type="text/javascript" src="dist/cartodb-popup-min.js"></script>
+    <link rel="stylesheet" href="css/leaflet.css" />
+    <!--[if IE]> <link rel="stylesheet" href="css/leaflet.ie.css" /> <![endif]-->
+    <link href="css/cartodb-leaflet.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="js/leaflet.js"></script>
+    <script type="text/javascript" src="js/wax.leaf.min.js"></script>
+    <script type="text/javascript" src="dist/cartodb-leaflet-min.js"></script>
+    <script type="text/javascript" src="dist/cartodb-popup-min.js"></script>
 
-          <script type="text/javascript">
+    <script type="text/javascript">
 
-            function altoGuiso() {
+      function altoGuiso() {
 
-              // Cacheo esto para evitar el peaje jQuery->DOM a cada rato.
-              var popUpTemplate = $('#popUpTemplate').html();
-            
-              // Crear el mapa
-              var map = new L.Map('map').setView([20,0], 3), popup = new L.CartoDBPopup();
+        // Cacheo esto para evitar el peaje jQuery->DOM a cada rato.
+        var popUpTemplate = $('#popUpTemplate').html();
+      
+        // Crear el mapa
+        var map = new L.Map('map').setView([20,0], 3), popup = new L.CartoDBPopup();
 
-              // Estilos (esTILES?) de MapBox.
-              var mapboxUrl = 'http://{s}.tiles.mapbox.com/v3/pablocubico.map-a23kqwl1/{z}/{x}/{y}.png'
-                      , mapbox = new L.TileLayer(mapboxUrl, {maxZoom: 18, attribution: "OpenStreetMaps"});
-                    map.addLayer(mapbox,true);
+        // Estilos (esTILES?) de MapBox.
+        var mapboxUrl = 'http://{s}.tiles.mapbox.com/v3/pablocubico.map-a23kqwl1/{z}/{x}/{y}.png'
+                , mapbox = new L.TileLayer(mapboxUrl, {maxZoom: 18, attribution: "OpenStreetMaps"});
+              map.addLayer(mapbox,true);
 
-              // Capa con los países
-              var layerPaises = new L.CartoDBLayer({
-                map: map,
-                user_name:'pablocubico',
-                table_name: 'leyes_antipirateria_geo',
-                query: "SELECT {{table_name}}.*, leyesantipirateria.estado FROM {{table_name}} INNER JOIN leyesantipirateria ON leyes_antipirateria_geo.iso3 = leyesantipirateria.iso3;",
-                auto_bound: false,
-                opacity: .5,
-                tile_style: "#leyes_antipirateria_geo [ estado = 3 ] { polygon-fill: #FF3142; } #leyes_antipirateria_geo [ estado = 2 ] { polygon-fill: #FCE406; } #leyes_antipirateria_geo [ estado = 1 ] { polygon-fill: #8DF1F3; }"
-              });
+        // Capa con los países
+        var layerPaises = new L.CartoDBLayer({
+          map: map,
+          user_name:'pablocubico',
+          table_name: 'leyes_antipirateria_geo',
+          query: "SELECT {{table_name}}.*, leyesantipirateria.estado FROM {{table_name}} INNER JOIN leyesantipirateria ON leyes_antipirateria_geo.iso3 = leyesantipirateria.iso3;",
+          auto_bound: false,
+          opacity: .5,
+          tile_style: "#leyes_antipirateria_geo [ estado = 3 ] { polygon-fill: #FF3142; } #leyes_antipirateria_geo [ estado = 2 ] { polygon-fill: #FCE406; } #leyes_antipirateria_geo [ estado = 1 ] { polygon-fill: #8DF1F3; }"
+        });
 
-              // Capa con los marcadores
-              var layerPuntos = new L.CartoDBLayer({
-                map: map,
-                user_name:"pablocubico",
-                table_name: 'leyesantipirateria',
-                query: "SELECT * FROM {{table_name}}",
-                tile_style: "#{{table_name}}{marker-fill:#ff6600; marker-width: 10; marker-type: arrow;marker-line-color: white;marker-line-width: 3;}",
-                opacity: 1,
-                interactivity: "nombre, nombrelargo, autoropartido, sancionada, tramite, procedimiento, afavor, encontra, pais_es, vigencia, anio",
-                featureOver: function(ev,latlng,pos,data) {
-                  document.body.style.cursor = "pointer";
-                },
-                featureOut: function() {
-                  document.body.style.cursor = "default";
-                },
-                featureClick: function(ev,latlng,pos,data) {
-                  // Contenido, ubicación, mostrar.
-                  popup.setContent(_.template(popUpTemplate, data));
-                  popup.setLatLng(latlng);
-                  map.openPopup(popup);
-                },
-                auto_bound: true,
-                debug: false
-              });
-              // Adding layer to map
-              map.addLayer(layerPaises);
-              map.addLayer(layerPuntos);
-            }
-          </script>
-          <div id="map" style="width: 1000px; height: 900px"></div>
-        </div>
-      </section>
+        // Capa con los marcadores
+        var layerPuntos = new L.CartoDBLayer({
+          map: map,
+          user_name:"pablocubico",
+          table_name: 'leyesantipirateria',
+          query: "SELECT * FROM {{table_name}}",
+          tile_style: "#{{table_name}}{marker-fill:#ff6600; marker-width: 10; marker-type: arrow;marker-line-color: white;marker-line-width: 3;}",
+          opacity: 1,
+          interactivity: "nombre, nombrelargo, autoropartido, sancionada, tramite, procedimiento, afavor, encontra, pais_es, vigencia, anio",
+          featureOver: function(ev,latlng,pos,data) {
+            document.body.style.cursor = "pointer";
+          },
+          featureOut: function() {
+            document.body.style.cursor = "default";
+          },
+          featureClick: function(ev,latlng,pos,data) {
+            // Contenido, ubicación, mostrar.
+            popup.setContent(_.template(popUpTemplate, data));
+            popup.setLatLng(latlng);
+            map.openPopup(popup);
+          },
+          auto_bound: true,
+          debug: false
+        });
+        // Adding layer to map
+        map.addLayer(layerPaises);
+        map.addLayer(layerPuntos);
+      }
+    </script>
 
     <!-- Incluir Lo-dash sólo para esto es un abuso, pero lo dejo para que sirva de ejemplo. -->
     <script type="text/template" id="popUpTemplate">
